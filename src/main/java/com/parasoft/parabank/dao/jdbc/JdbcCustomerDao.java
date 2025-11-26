@@ -85,10 +85,10 @@ public class JdbcCustomerDao extends NamedParameterJdbcDaoSupport implements Cus
      */
     @Override
     public Customer getCustomer(final int id) {
-        final String SQL = BASE_QUERY_SQL + " WHERE id = ?";
+        final String sql = BASE_QUERY_SQL + " WHERE id = ?";
 
         log.info("Getting customer object for id = " + id);
-        final Customer customer = getJdbcTemplate().queryForObject(SQL, new CustomerMapper(), id);
+        final Customer customer = getJdbcTemplate().queryForObject(sql, new CustomerMapper(), id);
 
         return customer;
     }
