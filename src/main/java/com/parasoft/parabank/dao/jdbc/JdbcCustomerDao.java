@@ -20,6 +20,8 @@ import com.parasoft.parabank.domain.Customer;
 
 
 public class JdbcCustomerDao extends NamedParameterJdbcDaoSupport implements CustomerDao {
+
+
     private static class CustomerMapper implements RowMapper<Customer> {
         @Override
         public Customer mapRow(final ResultSet rs, final int rowNum) throws SQLException {
