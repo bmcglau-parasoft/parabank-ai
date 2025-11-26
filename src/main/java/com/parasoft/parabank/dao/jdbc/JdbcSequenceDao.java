@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.support.JdbcDaoSupport;
  * Manages sequences to automatically generate ids for new entities
  */
 public class JdbcSequenceDao extends JdbcDaoSupport {
+
     public static final int OFFSET = 112;
 
     public int getCurrentId(final String name) {
