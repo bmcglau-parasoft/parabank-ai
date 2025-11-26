@@ -17,6 +17,8 @@ import com.parasoft.parabank.domain.Customer;
 /*
  * JDBC implementation of CustomerDao
  */
+
+
 public class JdbcCustomerDao extends NamedParameterJdbcDaoSupport implements CustomerDao {
     private static class CustomerMapper implements RowMapper<Customer> {
         @Override
