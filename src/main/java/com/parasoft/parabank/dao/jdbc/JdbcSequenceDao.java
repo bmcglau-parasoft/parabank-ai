@@ -9,6 +9,12 @@ public class JdbcSequenceDao extends JdbcDaoSupport {
 
     public static final int OFFSET = 112;
 
+    /**
+     * Get the current id for a given entity without incrementing
+     *
+     * @param name the name of the database table
+     * @return the current id value for the entity
+     */
     public int getCurrentId(final String name) {
         final Number number = getJdbcTemplate().queryForObject("SELECT next_id FROM Sequence WHERE name = ?",
             new Object[] { name }, Integer.class);
