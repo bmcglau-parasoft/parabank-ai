@@ -59,13 +59,13 @@ public class JdbcCustomerDao extends NamedParameterJdbcDaoSupport implements Cus
                 return existing.getId();
             }
         }
-        final String SQL =
+        final String sql =
             "INSERT INTO Customer (id, first_name, last_name, address, city, state, zip_code, phone_number, ssn, username, password) VALUES (:id, :firstName, :lastName, :address.street, :address.city, :address.state, :address.zipCode, :phoneNumber, :ssn, :username, :password)";
 
         final int id = sequenceDao.getNextId("Customer");
         customer.setId(id);
         final BeanPropertySqlParameterSource source = new BeanPropertySqlParameterSource(customer);
-        getNamedParameterJdbcTemplate().update(SQL, source);
+        getNamedParameterJdbcTemplate().update(sql, source);
 
         // getJdbcTemplate().update(SQL, new
         // BeanPropertySqlParameterSource(customer));
