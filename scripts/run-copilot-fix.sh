@@ -75,16 +75,14 @@ do
 				echo "mvn not found at $MVN_PATH"
 				exit 1
 			fi
-			shift 2
 			;;
-		--copilot-path )     COPILOT_PATH="${2// }";          shift 2 || missingArg --copilot-path
+		--copilot-path )     COPILOT_PATH="${2// }";     shift 2 || missingArg --copilot-path
 			if [[ -f "$COPILOT_PATH" ]]; then
 				COPILOT="$COPILOT_PATH"
 			else
 				echo "copilot not found at $COPILOT_PATH"
 				exit 1
 			fi
-			shift 2
 			;;
 		static | static-fix | run-test | testgen )    GOALS+="${1// },"; shift 1 ;;
 		* )
