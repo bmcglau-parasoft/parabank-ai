@@ -25,7 +25,6 @@ function print_usage() {
 	echo "          --git-project <bitbucket_project> Only used for BitBucket"
 	echo "          --git-repo <repository_name>      Name of the repository"
 	echo "          --git-auth <token>                Overrides token for making pull-request API calls"
-	echo "                                            If using GitHub, should be in format 'Bearer <token>'"
 	echo "                                            Must provide permissions to make editing calls to pull-requests"
 	echo "          --git-user <username>             Username for interacting with pull-request API"
 	echo "                                            Must match the auth token"

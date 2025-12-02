@@ -6,7 +6,7 @@ function start_review() {
 	curl -X GET --url "$GIT_BASEURL/repos/$GIT_OWNER/$GIT_REPO/pulls/$GIT_PULL_REQUEST_ID" -L \
 		-H "Accept: application/vnd.github+json" \
 		-H "User-Agent: $GIT_USER" \
-		-H "Authorization: $GIT_AUTH" \
+		-H "Authorization: Bearer $GIT_AUTH" \
 		-H "X-GitHub-Api-Version: 2022-11-28" \
 		-o scripts/pull-request.json
 	if [[ ! -f scripts/pull-request.json ]]; then
@@ -16,7 +16,7 @@ function start_review() {
 	curl -X GET --url "$GIT_BASEURL/repos/$GIT_OWNER/$GIT_REPO/pulls/$GIT_PULL_REQUEST_ID/files" -L \
 		-H "Accept: application/vnd.github+json" \
 		-H "User-Agent: $GIT_USER" \
-		-H "Authorization: $GIT_AUTH" \
+		-H "Authorization: Bearer $GIT_AUTH" \
 		-H "X-GitHub-Api-Version: 2022-11-28" \
 		-o scripts/changes.json
 
@@ -30,7 +30,7 @@ function start_review() {
 	curl -X POST --url "$GIT_BASEURL/repos/$GIT_OWNER/$GIT_REPO/pulls/$GIT_PULL_REQUEST_ID/reviews" -L \
 		-H "Accept: application/vnd.github+json" \
 		-H "User-Agent: $GIT_USER" \
-		-H "Authorization: $GIT_AUTH" \
+		-H "Authorization: Bearer $GIT_AUTH" \
 		-H "X-GitHub-Api-Version: 2022-11-28" \
 		-d "{\"commit_id\":\"$COMMIT_ID\"}" \
 		-o scripts/start-review.json
@@ -38,7 +38,12 @@ function start_review() {
 		echo "ERROR: Unable to create pending review for $GIT_PULL_REQUEST_ID"
 		exit 1
 	fi
-	REVIEW_ID=$(jq -r '.id' scripts/start-review.json)
+	REVIEW_ID=$(jq -r '.id // empty' scripts/start-review.json)
+	if [[ -z "$REVIEW_ID" ]]; then
+		ERR=$(jq -r '.message' scripts/start-review.json)
+		echo "Unable to start review of pull-request $GIT_PULL_REQUEST_ID: $ERR"
+		exit 1
+	fi
 	echo "Pull-request review $REVIEW_ID started"
 }
 
@@ -69,7 +74,7 @@ function finish_review() {
 	curl -X POST --url "$GIT_BASEURL/repos/$GIT_OWNER/$GIT_REPO/pulls/$GIT_PULL_REQUEST_ID/reviews/$REVIEW_ID/events" -L \
 		-H "Accept: application/vnd.github+json" \
 		-H "User-Agent: $GIT_USER" \
-		-H "Authorization: $GIT_AUTH" \
+		-H "Authorization: Bearer $GIT_AUTH" \
 		-H "X-GitHub-Api-Version: 2022-11-28" \
 		-d "$BODY" \
 		-o scripts/final_comment.json
