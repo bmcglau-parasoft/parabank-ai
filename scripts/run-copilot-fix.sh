@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MVN=$(which mvn)
+MVN=
 GIT_TYPE=GitHub
 GIT_PULL_REQUEST_ID=
 GIT_PROJECT=XTEST
@@ -89,6 +89,16 @@ if [[ -z "$GIT_AUTH" ]]; then
 	print_usage
 	exit 1
 fi
+
+if [[ -z "$MVN" || ! -f "$MVN" ]]; then
+	MVN=$(which mvn)
+	if [[ ! -f "$MVN" ]]; then
+		echo "ERROR: Maven not found"
+		exit 1
+	fi
+fi
+echo "Maven found at $MVN"
+"$MVN" --version
 
 STATUS=ok
 SUMMARY="# Analysis Summary"$'\n'
