@@ -9,7 +9,7 @@ function start_review() {
 		-H "Authorization: $GIT_AUTH" \
 		-H "X-GitHub-Api-Version: 2022-11-28" \
 		-o scripts/pull-request.json
-	if [[ ! -f pull-request.json ]]; then
+	if [[ ! -f scripts/pull-request.json ]]; then
 		echo "ERROR: Invalid pull-request $GIT_PULL_REQUEST_ID"
 		exit 1
 	fi
