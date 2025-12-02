@@ -102,8 +102,6 @@ echo "Maven found at $MVN"
 STATUS=ok
 SUMMARY="# Analysis Summary"$'\n'
 
-set -x
-
 case "$GIT_TYPE" in
 	BitBucket )		source ./scripts/bitbucket.sh	;;
 	GitHub )		source ./scripts/github.sh		;;
@@ -121,13 +119,17 @@ if [[ -d .jtest ]]; then
 fi
 
 # Perform SA on modified files and generate report.xml
-echo ""
+echo "=========================================================="
 echo "=====[ Performing static analysis on modified files ]====="
-echo ""
+echo "=========================================================="
 SUMMARY+="## Static Analysis"$'\n'
 "$MVN" clean package jtest:jtest -Dmaven.test.skip=true -Djtest.config="$SA_CONFIG" -Djtest.settings="$SA_SETTINGS"
+if [[ ! -f 'target/jtest/jtest.data.json' ]]; then
+	echo "ERROR: SA failed"
+	exit 1
+fi
 SUMMARY+="1. Jtest performed analysis on modified files using the \"$SA_CONFIG\" configuration"$'\n'
-PROJECT_NAME=$(jq -r '.name' target/jtest/jtest.data.json)
+PROJECT_NAME=$(jq -e -r '.name' target/jtest/jtest.data.json)
 echo "Found project name $PROJECT_NAME"
 
 # Configure environment variables and ask CoPilot CLI to fix violations using Jtest MCP server to get the violations, docs etc. For successful fixes, add a commit for each one.
@@ -139,9 +141,9 @@ echo "Jtest found $NUM_VIOLATIONS violations"
 SUMMARY+="2. Jtest found $NUM_VIOLATIONS violations"$'\n'
 
 if [[ -n "$NUM_VIOLATIONS" ]]; then
-	echo ""
+    echo "==============================================================="
 	echo "=====[ Ask Copilot CLI to fix violations and commit them ]====="
-	echo ""
+	echo "==============================================================="
 	export BASELINE_REPORT=target/jtest/report.xml
 	#export JTEST_HOME="C:/Program Files/Parasoft/jtest-2025.2.0"      # Should be set by the job, or on the workstation ENV
 	export JTEST_SETTINGS="$SA_SETTINGS"
@@ -176,9 +178,9 @@ fi
 
 # Run impacted tests with Jtest
 # TODO: Make this a TIA run
-echo ""
+echo "============================="
 echo "=====[ Run Junit tests ]====="
-echo ""
+echo "============================="
 "$MVN" test -P run-tia -Dmaven.test.failure.ignore=true
 SUMMARY+="## Junit test execution"$'\n'
 if [[ -f "target/reports/surefire.html" ]]; then
@@ -206,9 +208,9 @@ else
 fi
 
 # Perform Jtest CLI bulk test creation for modified source files. Commit changes and push to add to pull-request.
-echo ""
+echo "========================================================="
 echo "=====[ Create Junit tests for modified or new code ]====="
-echo ""
+echo "========================================================="
 get_modified_resources
 "$MVN" jtest:jtest -Djtest.config="builtin://Create Unit Tests" -Djtest.settings="$TESTGEN_SETTINGS" -Djtest.resources="$RESOURCES"
 SUMMARY+="## Test creation for modified code"$'\n'
@@ -228,8 +230,9 @@ else
 fi
 
 echo ""
-echo ""
+echo "========================================================"
 echo "=====[ Adding summary comment and updating status ]====="
+echo "========================================================"
 finish_review "$SUMMARY" "$STATUS"
 
 echo ""
