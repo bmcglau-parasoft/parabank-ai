@@ -809,13 +809,6 @@
     </plugins>
   </build>
 
-  <pluginRepositories>
-    <pluginRepository>
-      <id>Parasoft</id>
-      <url>https://build.parasoft.com/maven/</url>
-    </pluginRepository>
-  </pluginRepositories>
-
   <profiles>
     <profile>
       <id>soatest-it</id>
@@ -947,6 +940,33 @@
         </plugins>
       </build>
     </profile>
+	<profile>
+	  <id>run-tia</id>
+	  <build>
+	    <plugins>
+          <plugin>
+        <groupId>com.parasoft.jtest.tia</groupId>
+            <artifactId>tia-maven-plugin</artifactId>
+            <version>2025.2.0</version>
+            <executions>
+                <execution>
+                    <goals>
+                      <goal>affected-tests</goal>
+                    </goals>
+                    <configuration>
+                      <referenceCoverageFile>ai-res/coverage.xml</referenceCoverageFile>
+                      <referenceReportFile>ai-res/report.xml</referenceReportFile>
+                      <runFailedTests>false</runFailedTests>
+                      <runModifiedTests>true</runModifiedTests>
+                      <jtestHome>${env.JTEST_HOME}</jtestHome>
+                      <settings>ai-res/jtestcli-tia.properties</settings>
+                    </configuration>
+                </execution>
+            </executions>
+          </plugin>
+		</plugins>
+	  </build>
+	</profile>
   </profiles>
 
 </project>
