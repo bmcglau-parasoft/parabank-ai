@@ -222,7 +222,7 @@ if [[ "$GOALS" == *"run-test"* ]]; then
 	echo "============================="
 	echo "=====[ Run Junit tests ]====="
 	echo "============================="
-	"$MVN" test -P run-tia -Dmaven.test.failure.ignore=true -Dtia.settings="$TIA_SETTINGS"
+	"$MVN" test surefire-report:report-only -P run-tia -Dmaven.test.failure.ignore=true -Dtia.settings="$TIA_SETTINGS"
 	SUMMARY+="## Junit test execution"$'\n'
 	if [[ -f "target/reports/surefire.html" ]]; then
 		rm -rf scripts/test_failures.md

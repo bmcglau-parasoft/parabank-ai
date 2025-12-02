@@ -639,6 +639,11 @@
             <runOrder>alphabetical</runOrder>
           </configuration>
         </plugin>
+		<plugin>
+		  <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-report-plugin</artifactId>
+          <version>${maven-surefire-plugin.version}</version>
+		</plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-war-plugin</artifactId>
@@ -947,24 +952,28 @@
 	  <id>run-tia</id>
 	  <build>
 	    <plugins>
+		  <plugin>
+		    <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-report-plugin</artifactId>
+		  </plugin>
           <plugin>
-        <groupId>com.parasoft.jtest.tia</groupId>
+            <groupId>com.parasoft.jtest.tia</groupId>
             <artifactId>tia-maven-plugin</artifactId>
             <version>2025.2.0</version>
             <executions>
-                <execution>
-                    <goals>
-                      <goal>affected-tests</goal>
-                    </goals>
-                    <configuration>
-                      <referenceCoverageFile>${tia.coverage-xml}</referenceCoverageFile>
-                      <referenceReportFile>${tia.coverage-xml}</referenceReportFile>
-                      <runFailedTests>false</runFailedTests>
-                      <runModifiedTests>true</runModifiedTests>
-                      <jtestHome>${env.JTEST_HOME}</jtestHome>
-                      <settings>${tia.settings}</settings>
-                    </configuration>
-                </execution>
+              <execution>
+                <goals>
+                  <goal>affected-tests</goal>
+                </goals>
+                <configuration>
+                  <referenceCoverageFile>${tia.coverage-xml}</referenceCoverageFile>
+                  <referenceReportFile>${tia.coverage-xml}</referenceReportFile>
+                  <runFailedTests>false</runFailedTests>
+                  <runModifiedTests>true</runModifiedTests>
+                  <jtestHome>${env.JTEST_HOME}</jtestHome>
+                  <settings>${tia.settings}</settings>
+                </configuration>
+              </execution>
             </executions>
           </plugin>
 		</plugins>
