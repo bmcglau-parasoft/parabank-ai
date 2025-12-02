@@ -176,7 +176,7 @@ else
 	NUM_VIOLATIONS=0
 fi
 
-if [[ -n "$NUM_VIOLATIONS" && "$GOALS" == *"static-fix"* ]]; then
+if [[ "$NUM_VIOLATIONS" -ne 0 && "$GOALS" == *"static-fix"* ]]; then
     echo "==============================================================="
 	echo "=====[ Ask Copilot CLI to fix violations and commit them ]====="
 	echo "==============================================================="
