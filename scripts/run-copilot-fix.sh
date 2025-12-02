@@ -115,8 +115,8 @@ fi
 echo "Maven found at $MVN"
 "$MVN" --version
 
-if [[  -z "$COPILOT" || ! -f "$COPILOT" ]]; then
-	MVN=$(which copilot)
+if [[ -z "$COPILOT" || ! -f "$COPILOT" ]]; then
+	COPILOT=$(which copilot)
 	if [[ ! -f "$COPILOT" ]]; then
 		echo "ERROR: Copilot CLI not found: $COPILOT"
 		exit 1
