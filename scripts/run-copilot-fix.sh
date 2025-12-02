@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MVN="/cygdrive/c/apache-maven-3.9.11/bin/mvn"
+MVN=$(which mvn)
 GIT_TYPE=GitHub
 GIT_PULL_REQUEST_ID=
 GIT_PROJECT=XTEST
@@ -33,6 +33,7 @@ function print_usage() {
 	echo "                                            Default: 'builtin://Demo Configuration'"
 	echo "          --sa-settings <settings>          Path to the .properties file for Jtest settings"
 	echo "          --testgen-settings <settings>     Path to the .properties file for Jtest bulk creation"
+	echo "          --maven-path <path>               Path to maven home - bin/mvn should be relative to this directory"
 }
 function missingArg () {
 	echo "ERROR:  missing argument for:  $1"
@@ -59,7 +60,16 @@ do
 		--git-user )		 GIT_USER="${2// }";		 shift 2 || missingArg --git-user	  ;;
 		--sa-config )		 SA_CONFIG="${2// }";		 shift 2 || missingArg --sa-config	  ;;
 		--sa-settings )		 SA_SETTINGS="${2// }";		 shift 2 || missingArg --sa-settings  ;;
-		--testgen-settings ) TESTGEN_SETTINGS="${2// }"; shift 2 || missingArg --sa-settings  ;;
+		--testgen-settings ) TESTGEN_SETTINGS="${2// }"; shift 2 || missingArg --testgen-settings  ;;
+		--maven-path )       MVN_PATH="${2// }/bin/mvn"; shift 2 || missingArg --maven-path
+			if [[ -f "$MVN_PATH" ]]; then
+				MVN="$MVN_PATH"
+			else
+				echo "mvn not found at $MVN_PATH"
+				exit 1
+			fi
+			shift 2
+			;;
 		* )
 			echo "ERROR:  parameter not understood:  $1"
 			print_usage
