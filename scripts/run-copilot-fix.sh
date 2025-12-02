@@ -13,6 +13,7 @@ GOALS=
 
 SA_CONFIG="builtin://Demo Configuration"
 SA_SETTINGS="scripts/jtestcli.properties"
+TIA_SETTINGS="scripts/jtestcli.properties"
 TESTGEN_SETTINGS="scripts/testgen.properties"
 
 function print_usage() {
@@ -32,7 +33,8 @@ function print_usage() {
 	echo "                                            Must match the auth token"
 	echo "          --sa-config <configuration>       Jtest configuration to use when performing static analysis"
 	echo "                                            Default: 'builtin://Demo Configuration'"
-	echo "          --sa-settings <settings>          Path to the .properties file for Jtest settings"
+	echo "          --sa-settings <settings>          Path to the .properties file for Jtest static analysis settings"
+	echo "          --tia-settings <settings>         Path to the .properties file for Jtest impacted test execution settings"
 	echo "          --testgen-settings <settings>     Path to the .properties file for Jtest bulk creation"
 	echo "          --maven-path <path>               Path to maven home - bin/mvn should be relative to this directory"
 	echo "          --copilot-path <path>             Path to copilot executable"
@@ -220,7 +222,7 @@ if [[ "$GOALS" == *"run-test"* ]]; then
 	echo "============================="
 	echo "=====[ Run Junit tests ]====="
 	echo "============================="
-	"$MVN" test -P run-tia -Dmaven.test.failure.ignore=true
+	"$MVN" test -P run-tia -Dmaven.test.failure.ignore=true -Dtia.settings="$TIA_SETTINGS"
 	SUMMARY+="## Junit test execution"$'\n'
 	if [[ -f "target/reports/surefire.html" ]]; then
 		rm -rf scripts/test_failures.md
