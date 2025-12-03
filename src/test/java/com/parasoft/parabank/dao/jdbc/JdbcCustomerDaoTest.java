@@ -1,24 +1,36 @@
 package com.parasoft.parabank.dao.jdbc;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
-
-import jakarta.annotation.Resource;
+import java.lang.reflect.Field;
 
 import org.junit.Test;
 import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.support.JdbcDaoSupport;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.parasoft.parabank.dao.CustomerDao;
 import com.parasoft.parabank.domain.Address;
 import com.parasoft.parabank.domain.Customer;
 import com.parasoft.parabank.test.util.AbstractParaBankDataSourceTest;
+
+import jakarta.annotation.Resource;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.*;
 /**
  * @req PAR-13
  *
  */
-public class JdbcCustomerDaoTest extends AbstractParaBankDataSourceTest {
+public class JdbcCustomerDaoTest extends AbstractParaBankDataSourceTest
+{
     private static final String FIRST_NAME = "Steve";
 
     private static final String LAST_NAME = "Jobs";
@@ -44,7 +56,8 @@ public class JdbcCustomerDaoTest extends AbstractParaBankDataSourceTest {
 
     private Customer customer;
 
-    private void defaultCustomerTest(final Customer customer) {
+    private void defaultCustomerTest(final Customer customer)
+    {
         assertEquals(12212, customer.getId());
         assertEquals("John", customer.getFirstName());
         assertEquals("Smith", customer.getLastName());
@@ -59,7 +72,8 @@ public class JdbcCustomerDaoTest extends AbstractParaBankDataSourceTest {
     }
 
     @Override
-    public void onSetUp() throws Exception {
+    public void onSetUp() throws Exception
+    {
         super.onSetUp();
         customer = new Customer();
         customer.setFirstName(FIRST_NAME);
@@ -76,12 +90,14 @@ public class JdbcCustomerDaoTest extends AbstractParaBankDataSourceTest {
         customer.setPassword(PASSWORD);
     }
 
-    public void setCustomerDao(final CustomerDao customerDao) {
+    public void setCustomerDao(final CustomerDao customerDao)
+    {
         this.customerDao = customerDao;
     }
 
     @Test
-    public void testCreateCustomer() {
+    public void testCreateCustomer()
+    {
         final int id = customerDao.createCustomer(customer);
         assertEquals("wrong expected id?", 12434, id);
 
@@ -91,7 +107,8 @@ public class JdbcCustomerDaoTest extends AbstractParaBankDataSourceTest {
     }
 
     @Test
-    public void testGetCustomer() {
+    public void testGetCustomer()
+    {
         Customer customer = customerDao.getCustomer(12212);
         defaultCustomerTest(customer);
 
@@ -103,7 +120,8 @@ public class JdbcCustomerDaoTest extends AbstractParaBankDataSourceTest {
     }
 
     @Test
-    public void testGetCustomerBySSN() {
+    public void testGetCustomerBySSN()
+    {
         final Customer customer = customerDao.getCustomer("622-11-9999");
         defaultCustomerTest(customer);
 
@@ -113,7 +131,8 @@ public class JdbcCustomerDaoTest extends AbstractParaBankDataSourceTest {
     }
 
     @Test
-    public void testGetCustomerByUsername() {
+    public void testGetCustomerByUsername()
+    {
         final Customer customer = customerDao.getCustomer("john", "demo");
         defaultCustomerTest(customer);
 
@@ -126,7 +145,8 @@ public class JdbcCustomerDaoTest extends AbstractParaBankDataSourceTest {
     }
 
     @Test
-    public void testUpdateCustomer() {
+    public void testUpdateCustomer()
+    {
         final int id = customerDao.createCustomer(customer);
 
         final Customer customer = customerDao.getCustomer(id);
@@ -153,4 +173,41 @@ public class JdbcCustomerDaoTest extends AbstractParaBankDataSourceTest {
         assertFalse(this.customer.equals(updatedCustomer));
         assertEquals(customer, updatedCustomer);
     }
+
+    /**
+     * Parasoft Jtest UTA: Test for createCustomer(Customer)
+     *
+     * @see com.parasoft.parabank.dao.jdbc.JdbcCustomerDao#createCustomer(Customer)
+     * @author sv-jenkins
+     */
+    @Test(timeout = 5000)
+    public void testCreateCustomer_WithMockedDependencies() throws Throwable
+    {
+        // Given
+        JdbcCustomerDao underTest = new JdbcCustomerDao();
+        NamedParameterJdbcTemplate namedParameterJdbcTemplateValue = mock(NamedParameterJdbcTemplate.class);
+        ReflectionTestUtils.setField(underTest, "namedParameterJdbcTemplate", namedParameterJdbcTemplateValue);
+        JdbcSequenceDao sequenceDao = mock(JdbcSequenceDao.class);
+        underTest.setSequenceDao(sequenceDao);
+
+        // When
+        Customer customer2 = mockCustomer();
+        int result = underTest.createCustomer(customer2);
+
+        // Then - assertions for result of method createCustomer(Customer)
+        assertEquals(0, result);
+
+    }
+
+    /**
+     * Parasoft Jtest UTA: Helper method to generate and configure mock of Customer
+     */
+    private static Customer mockCustomer() throws Throwable
+    {
+        Customer customer2 = mock(Customer.class);
+        int getIdResult = 0; // UTA: configured value
+        when(customer2.getId()).thenReturn(getIdResult);
+        return customer2;
+    }
+
 }
