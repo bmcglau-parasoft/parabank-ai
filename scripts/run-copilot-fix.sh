@@ -96,9 +96,8 @@ do
 done
 
 if [[ -z "$GOALS" ]]; then
-	echo "ERROR: No goals specified"
-	print_usage
-	exit 1
+	GOALS="static-fix,run-test,testgen"
+	echo "No goals specified - all goals will be run"
 fi
 
 if [[ -z "$GIT_PULL_REQUEST_ID" ]]; then
