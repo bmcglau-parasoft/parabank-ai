@@ -967,7 +967,7 @@
                 </goals>
                 <configuration>
                   <referenceCoverageFile>${tia.coverage-xml}</referenceCoverageFile>
-                  <referenceReportFile>${tia.coverage-xml}</referenceReportFile>
+                  <referenceReportFile>${tia.report-xml}</referenceReportFile>
                   <runFailedTests>false</runFailedTests>
                   <runModifiedTests>true</runModifiedTests>
                   <jtestHome>${env.JTEST_HOME}</jtestHome>

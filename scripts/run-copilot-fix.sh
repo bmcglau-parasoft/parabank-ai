@@ -230,7 +230,7 @@ if [[ "$GOALS" == *"run-test"* ]]; then
 	if [[ -f "target/reports/surefire.html" ]]; then
 		rm -rf scripts/test_failures.md
 		rm -rf scripts/test_results.md
-		"$COPILOT" -p "Examine the Surefire report at @target/reports/surefire.html. Create a simple markdown report containing the test name and failure message for each error or failure, plus the total number of tests that ran, passed, or failed. If there were any failures, write this report to scripts/test_failures.md; otherwise, write the report to scripts/test_results.md." --model claude-sonnet-4.5 --allow-all-tools --allow-all-paths --log-dir .copilot/logs/
+		"$COPILOT" -p "Examine the Surefire report at @target/reports/surefire.html. Create a simple markdown report containing only information from the `Summary` and `Failure Details` sections of the report. If there were any failures, write your report to scripts/test_failures.md; otherwise, write your report to scripts/test_results.md." --model claude-sonnet-4.5 --allow-all-tools --allow-all-paths --log-dir .copilot/logs/
 		if [[ -f "scripts/test_failures.md" ]]; then
 			echo "There are test failures. The pull-request will be marked as 'Needs Work'."
 			COMMENT=$(cat scripts/test_failures.md)
