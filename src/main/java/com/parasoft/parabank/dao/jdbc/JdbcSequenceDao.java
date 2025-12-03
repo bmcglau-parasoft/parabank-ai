@@ -28,7 +28,7 @@ public class JdbcSequenceDao extends JdbcDaoSupport {
      */
     public int getNextId(final String name) {
         final Number number = getJdbcTemplate().queryForObject("SELECT next_id FROM Sequence WHERE name = ?",
-            new Object[] { name }, Integer.class);
+            Integer.class, name);
         final int nextId = number != null ? number.intValue() : 0;
         // int nextId = getJdbcTemplate().queryForInt("SELECT next_id FROM
         // Sequence WHERE name = ?", name);
@@ -39,7 +39,7 @@ public class JdbcSequenceDao extends JdbcDaoSupport {
     public int setNextId(final String name, final int nextId) {
         getJdbcTemplate().update("UPDATE Sequence SET next_id = ? WHERE name = ?", nextId + OFFSET, name);
         final Number number = getJdbcTemplate().queryForObject("SELECT next_id FROM Sequence WHERE name = ?",
-            new Object[] { name }, Integer.class);
+            Integer.class, name);
         final int newNextId = number != null ? number.intValue() : 0;
         return newNextId;
     }
