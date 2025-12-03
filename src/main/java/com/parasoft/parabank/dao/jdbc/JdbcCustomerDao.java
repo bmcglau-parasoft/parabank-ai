@@ -59,13 +59,13 @@ public class JdbcCustomerDao extends NamedParameterJdbcDaoSupport implements Cus
                 return existing.getId();
             }
         }
-        final String SQL =
+        final String sql =
             "INSERT INTO Customer (id, first_name, last_name, address, city, state, zip_code, phone_number, ssn, username, password) VALUES (:id, :firstName, :lastName, :address.street, :address.city, :address.state, :address.zipCode, :phoneNumber, :ssn, :username, :password)";
 
         final int id = sequenceDao.getNextId("Customer");
         customer.setId(id);
         final BeanPropertySqlParameterSource source = new BeanPropertySqlParameterSource(customer);
-        getNamedParameterJdbcTemplate().update(SQL, source);
+        getNamedParameterJdbcTemplate().update(sql, source);
 
         // getJdbcTemplate().update(SQL, new
         // BeanPropertySqlParameterSource(customer));
@@ -81,10 +81,10 @@ public class JdbcCustomerDao extends NamedParameterJdbcDaoSupport implements Cus
      */
     @Override
     public Customer getCustomer(final int id) {
-        final String SQL = BASE_QUERY_SQL + " WHERE id = ?";
+        final String sql = BASE_QUERY_SQL + " WHERE id = ?";
 
         log.info("Getting customer object for id = " + id);
-        final Customer customer = getJdbcTemplate().queryForObject(SQL, new CustomerMapper(), id);
+        final Customer customer = getJdbcTemplate().queryForObject(sql, new CustomerMapper(), id);
 
         return customer;
     }
@@ -96,13 +96,13 @@ public class JdbcCustomerDao extends NamedParameterJdbcDaoSupport implements Cus
      */
     @Override
     public Customer getCustomer(final String ssn) {
-        final String SQL = BASE_QUERY_SQL + " WHERE ssn = ?";
+        final String sql = BASE_QUERY_SQL + " WHERE ssn = ?";
 
         Customer customer = null;
 
         try {
             log.info("Getting customer object for ssn = " + ssn);
-            customer = getJdbcTemplate().queryForObject(SQL, new CustomerMapper(), ssn);
+            customer = getJdbcTemplate().queryForObject(sql, new CustomerMapper(), ssn);
         } catch (final DataAccessException e) {
             log.warn("Invalid customer lookup attempt with ssn = " + ssn);
         }
@@ -117,13 +117,13 @@ public class JdbcCustomerDao extends NamedParameterJdbcDaoSupport implements Cus
      */
     @Override
     public Customer getCustomer(final String username, final String password) {
-        final String SQL = BASE_QUERY_SQL + " WHERE username = ? and password = ?";
+        final String sql = BASE_QUERY_SQL + " WHERE username = ? and password = ?";
 
         Customer customer = null;
 
         try {
             log.info("Getting customer object for username = " + username + " and password = " + password);
-            customer = getJdbcTemplate().queryForObject(SQL, new CustomerMapper(), username, password);
+            customer = getJdbcTemplate().queryForObject(sql, new CustomerMapper(), username, password);
         } catch (final DataAccessException e) {
             log.warn("Invalid login attempt with username = " + username + " and password = " + password);
         }
@@ -143,11 +143,11 @@ public class JdbcCustomerDao extends NamedParameterJdbcDaoSupport implements Cus
     @Override
     public void updateCustomer(final Customer customer) {
         // Purposely introduce a security failure to demonstrate SQL injections in the REST API
-        final String SQL =
+        final String sql =
                 "UPDATE Customer SET first_name = '" + customer.getFirstName() + "', last_name = :lastName, address = :address.street, city = :address.city, state = :address.state, zip_code = :address.zipCode, phone_number = :phoneNumber, ssn = :ssn, username = :username, password = :password WHERE id = :id";
 
         final BeanPropertySqlParameterSource source = new BeanPropertySqlParameterSource(customer);
-        getNamedParameterJdbcTemplate().update(SQL, source);
+        getNamedParameterJdbcTemplate().update(sql, source);
         // getJdbcTemplate().update(SQL, new
         // BeanPropertySqlParameterSource(customer));
         log.info("Updated information for customer with id = " + customer.getId());
