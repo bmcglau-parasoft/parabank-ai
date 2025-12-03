@@ -1,84 +1,79 @@
 # Introduction
-The ParaBank demo web application and associated web services (SOAP and REST) from Parasoft.
 
-# Build and Install
-1. Build the ParaBank application using Maven (`mvn clean install`). After a successful build, deploy the `parabank.war` (located in `/target`) into an Apache Tomcat container.
+This is a clone of the Parabank Github project [here](https://github.com/parasoft/parabank), with a few important changes:
 
-NOTE: if using the coverage agent when running the functional/manual tests (see below), execute the build using "mvn -Dmaven.test.skip=true clean install jtest:monitor"
+- The scripts directory has been added with files and scripts used to perform automated quality-gate analysis
+- All branches except for master have been deleted
 
-* ParaBank uses a built-in HyperSQL database. You must shut down all running instances of **ParaBank** and *HyperSQL* for the build to succeed. Otherwise several tests may fail, since there are a number of ports that are shared between the test instances and the real thing. See [changing default ports](#changing-default-ports).
+## Prerequisites
 
-## Apache Tomcat notes
-* Java `17` is recommended. Oracle JDK or Zulu OpenJDK is preferred.
+In order to perform the quality-gate analysis, you will need the following:
 
-* Apache Tomcat `10.1` is recommended.
+- Cygwin with standard tools, including:
+    - curl
+	- jq
+- Maven 3.9+, JDK 17, and Git
+- GitHub Copilot CLI and its prerequisites from [here](https://github.com/github/copilot-cli).
+    - Node.js v22 or higher
+    - npm v10 or higher
+    - (On Windows) PowerShell v6 or higher
+    - An active Copilot subscription. [See Copilot plans](https://github.com/features/copilot/plans?ref_cta=Copilot+plans+signup&ref_loc=install-copilot-cli&ref_page=docs).
+- Jtest 2025.2+ with an active Parasoft license
+- A Github account with access to the [Parasoft-AI](https://github.com/parasoft-AI) organization. This provides the "Copilot subscription" above and access to the model used by scripts.
 
-* To prevent verbose cache warnings in the tomcat log::
+## Installation
 
- ```text
- Oct 06, 2016 3:53:33 PM org.apache.catalina.webresources.Cache getResource
- WARNING: Unable to add the resource at [/WEB-INF/lib/wss4j-ws-security-stax-2.1.3.jar] to the cache because there was insufficient free space available after evicting expired cache entries - consider increasing the maximum size of the cache
- ```
+1. Install cygwin and include curl and jq.
+2. Install [Maven 3.9+](https://maven.apache.org/download.cgi), Java 17, and git and include them on the path. Check that they are available in Cygwin.
+3. Install node.js from [here](https://nodejs.org/en/download)
+4. Launch cygwin and install Copilot CLI: `npm install -g @github/copilot`
+5. Install Jtest 2025.2 and set the JTEST_HOME environment variable. Add the Jtest and TIA plugins to ~/.m2/.settings.xml according to the [instructions](https://docs.parasoft.com/display/JTEST20252/Configuring+the+Jtest+Plugin+for+Maven)
+6. Configure copilot:
+    1. In cygwin, run `copilot` and accept the current directory.
+	2. Login with `/login`. Use github.com and follow instructions to finish login.
+	3. Set the model: `/model claude-sonnet-4.5`
+	4. Add the Jtest MCP server with `/mcp add`
+	5. Configure the server with name='Jtest', type='Local', command='\<path_to_jtest\>/integration/mcp/jtestmcp.bat'.
+	    - It is strongly recommended to avoid paths with spaces for the command.
+	    - Environment variables are not needed and tools can be 'all' (default).
+	6. Add the directory where this Parabank project will be checked out using git: `add-dir \<path\>`.
+	7. Save and quit Copilot CLI
 
-Add the following to the `<tomcat install>/config/context.xml` make sure to place this block before `</Context>` tag. This setting will provide `100 MB`  for caching:
+## Running analysis
 
-  ```xml
-  <Resources cachingAllowed="true" cacheMaxSize="102400" />
-  ```
-* To support clean re-deployments of **ParaBank** please add the following to the `<Context>` tag of the `<tomcat install>/config/context.xml`
+This is intended to be done after a pull-request is created, to perform analysis on the files changed in the pull-request. Here's an example workflow:
 
- ```xml
- <Context antiResourceLocking="true">
- ```
+1. Clone this project into a local directory.
+2. Make a code change, commit it, and submit a pull-request
+3. Build the jtestcli.properties file with the following settings:<br/>
+    parasoft.eula.accepted=true<br/>
+	license and/or DTP settings<br/>
+	scope.scontrol=true<br/>
+	scope.scontrol.files.filter.mode=branch<br/>
+	scontrol.rep1.type=git<br/>
+	scontrol.rep1.git.url=https://github.com/\<git_user\>/\<git_repo\>.git<br/>
+	scontrol.rep1.git.workspace=\<path_to_git_repo\><br/>
+	scontrol.git.exec=\<path_to_git_exe\><br/>
+	scontrol.rep1.git.branch=\<pull_request_branch\>
+4. Add the following properties to scripts/testgen.properties:<br/>
+	parasoft.eula.accepted=true<br/>
+	license and/or DTP settings<br/>
+	LLM settings (optional)
+5. Run scripts/run-copilot-fix.sh --pull-request \<id\> --git-auth \<auth_token\> \<goals\><br/>
+	The pull-request ID is the number from github<br/>
+	The auth_token should be a fine-grained Personal Access Token with permissions for pull-requests for the GitHub repository. See [Managing your Personal Access Tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).<br/>
+	The goals should be one or more of static, static-fix, run-test, and/or testgen. Each is a separate argument and represent the different parts of analysis. If not specified, all goals are run.
 
-## Changing default ports
-HyperSQL listens on the default port number `9001`. This port number can conflict with other instances of HyperSQL and may conflict with certain other applications such as the "Intel(R) Graphics Command Center Service". To change the port number to something else like `9002` , modify the following files located under "src/main/resources" or in a deployed WAR under "WEB-INF/classes":
+## Expected results
 
-* **applicationContext-hsqldb.xml**: This file configures HyperSQL. Look for the "hsqldb" bean and its "props". Add the following "prop", giving it the desired port number:
+The run-copilot-fix.sh script should perform static analysis using the Jtest Maven plugin on all java files modified in the pull-request branch.
+Copilot CLI should then be used to fix 2 violations per file and commit the fixes. These commits are pushed to the pull-request.
+Impacted Junit tests are run using the Jtest Maven plugin, and the results are summarized by Copilot CLI.
+Bulk creation is performed using the Jtest Maven plugin, and modified .java files are committed and pushed to the pull-request.
+A report is generated with the outcome of all the above steps, including summaries from Copilot about its fixes for violations and the Junit execution results. The report is added as a comment to the pull-request. If Junit tests failed, the pull-request is marked as "Needs work".
+Files should be generated in the scripts/ folder for debugging:
 
-```
-<prop key="server.port">9002</prop>
-```
-
-* **jdbc.properties**: This file configures the JDBC client connection used by ParaBank. Change "jdbc.url" to include the desired port number:
-
-```
-jdbc.url=jdbc:hsqldb:hsql://localhost:9002/parabank
-```
-
-* **jdbcBookstore.properties**: This file configures the JDBC client connection used by Bookstore. Change the following properties to include the desired port number:
-
-```
-jdbc.bookstoreURL=jdbc:hsqldb:hsql://localhost:9002/bookstore
-jdbc.bookstorePort=9002
-```
-
-Apache ActiveMQ listens on the default port number `61616`. This port number can conflict with other instances of ActiveMQ. To change the default port number to something else like `61617`, modify the following file located under "src/main/resources" or in a deployed WAR under "WEB-INF/classes":
-
-* **applicationContext-jms.xml**: This file configures ActiveMQ. Modify the port number in the "uri" for the transportConnector:
-
-```
-<amq:transportConnector uri="tcp://0.0.0.0:61617?transport.daemon=true" />
-```
-
-# Test scripts
-* All scripts exist in two flavors (.bat and .sh) for Windows and Linux respectively.
-* All scripts should be executed from project directory and require the following Parasoft products (and versions)
-** Parasoft DTP 5.3.2
-** Parasoft Jtest 10.3.2
-** Parasoft SOAtest 9.10.1
-
-Script                                 | Description
--------------------------------------- | -----------
-__deploy-jtest-monitor(.sh\|.bat)__    | Deploys the Jtest Monitor package (created using mvn goal jtest:monitor) into directory specified by APP_COVERAGE_DIR in `set-vars(.sh|.bat)`
-__jtest-ft-cov(.sh\|.bat)__            | Executes Parasoft Jtest DTP Engine for processing monitored coverage during functional testing with SOAtest
-__jtest-mt-cov(.sh\|.bat)__            | Uploads results from manual testing efforts (managed using the Parasoft Coverage Agent Manager) and processing coverage data captured during manual testing
-__jtest-sa-ut(.sh\|.bat)__             | Executes Parasoft Jtest DTP Engine for Static Analysis and Unit Testing results/coverage
-__jtest-sa-ut-delta(.sh\|.bat)__       | Same operation as `jtest-sa-ut(.sh|.bat)` but used to rescan code based for localized changes - used for demonstration purposes when scanning 'dirty' branch
-__set-vars(.sh\|.bat)__                | Utility script called by other scripts to consistently set BUILD_ID and the Project name sent to DTP
-__soatest(.sh\|.bat)__                 | Executes Parasoft SOAtest API and Web functional tests (including integration with Jtest DTP Engine for monitoring code coverage)
-
-## Setup
-set-vars.(.sh\|.bat): setup JTEST_HOME and SOATEST_HOME environment variable before running any script.
-all reports will be stored under target/report/<build ID> directory.
-on Windows, 7zip must be installed (default to C:\Program Files\7-zip) to run deploy-jtest-monitor.bat script.
+- .json files are the Github API responses for curl requests made during script execution
+- copilot_summary.md is Copilot's summary of violation fixes performed and is added to the pull-request summary comment
+- test_results.md or test_failures.md are Copilot's summary of Junit execution results which is added to the pull-request summary comment
+- summary.md is the full comment added to the pull-request
