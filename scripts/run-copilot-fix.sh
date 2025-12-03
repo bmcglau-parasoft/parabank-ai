@@ -152,8 +152,8 @@ if [[ -d .jtest ]]; then
 	rm -rf .jtest
 fi
 
-GROUPID=$(xmllint --xpath "//project/groupId/text()" pom.xml)
-ARTIFACTID=$(xmllint --xpath "//project/artifactId/text()" pom.xml)
+GROUPID=$(xmllint --xpath "*[local-name()='project']/*[local-name()='groupId']/text()" pom.xml)
+ARTIFACTID=$(xmllint --xpath "*[local-name()='project']/*[local-name()='artifactId']/text()" pom.xml)
 PROJECT_NAME="$GROUPID:$ARTIFACTID"
 #PROJECT_NAME=$(jq -e -r '.name' target/jtest/jtest.data.json)
 echo "Found project name $PROJECT_NAME"
