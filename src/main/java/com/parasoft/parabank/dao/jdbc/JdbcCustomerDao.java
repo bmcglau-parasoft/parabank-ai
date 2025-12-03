@@ -53,6 +53,10 @@ public class JdbcCustomerDao extends NamedParameterJdbcDaoSupport implements Cus
      */
     @Override
     public int createCustomer(final Customer customer) {
+        if (customer.getId() > 0) {
+            Customer existing = getCustomer(customer.getSsn());
+            return existing.getId();
+        }
         final String SQL =
             "INSERT INTO Customer (id, first_name, last_name, address, city, state, zip_code, phone_number, ssn, username, password) VALUES (:id, :firstName, :lastName, :address.street, :address.city, :address.state, :address.zipCode, :phoneNumber, :ssn, :username, :password)";
 
@@ -111,10 +115,6 @@ public class JdbcCustomerDao extends NamedParameterJdbcDaoSupport implements Cus
      */
     @Override
     public Customer getCustomer(final String username, final String password) {
-        if (customer.getId() > 0) {
-            Customer existing = getCustomer(customer.getSsn());
-            return existing.getId();
-        }
         final String SQL = BASE_QUERY_SQL + " WHERE username = ? and password = ?";
 
         Customer customer = null;
