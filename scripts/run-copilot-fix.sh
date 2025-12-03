@@ -152,6 +152,12 @@ if [[ -d .jtest ]]; then
 	rm -rf .jtest
 fi
 
+GROUPID=$(xmllint --xpath "//project/groupId/text()" pom.xml)
+ARTIFACTID=$(xmllint --xpath "//project/artifactId/text()" pom.xml)
+PROJECT_NAME="$GROUPID:$ARTIFACTID"
+#PROJECT_NAME=$(jq -e -r '.name' target/jtest/jtest.data.json)
+echo "Found project name $PROJECT_NAME"
+
 if [[ "$GOALS" == *"static"* || "$GOALS" == *"static-fix"* ]]; then
 	# Perform SA on modified files and generate report.xml
 	echo "=========================================================="
@@ -164,8 +170,6 @@ if [[ "$GOALS" == *"static"* || "$GOALS" == *"static-fix"* ]]; then
 		exit 1
 	fi
 	SUMMARY+="1. Jtest performed analysis on modified files using the \"$SA_CONFIG\" configuration"$'\n'
-	PROJECT_NAME=$(jq -e -r '.name' target/jtest/jtest.data.json)
-	echo "Found project name $PROJECT_NAME"
 
 	# Configure environment variables and ask CoPilot CLI to fix violations using Jtest MCP server to get the violations, docs etc. For successful fixes, add a commit for each one.
 	NUM_VIOLATIONS=$(cat target/jtest/report.xml | sed -n "s/.*Goals tsks=\"\([0-9]\+\)\".*/\1/p")
