@@ -21,6 +21,10 @@ function get_modified_resources() {
 	echo "Modified files: $RESOURCES"
 }
 
+function cancel_review() {
+	# Nothing to do
+}
+
 function finish_review() {
 	if [[ "$2" == "ok" ]]; then
 		curl --request POST --url "$GIT_BASEURL/$GIT_PROJECT/repos/$GIT_REPO/pull-requests/$GIT_PULL_REQUEST_ID/comments" \

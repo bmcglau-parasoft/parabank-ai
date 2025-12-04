@@ -20,6 +20,10 @@ Before initialization, recognize and attempt to collect the following parameters
   - Sources and resolution order: 1) explicit path in the user prompt/flags, 2) JTEST_HOME env var, 3) PATH lookup for `jtestcli.exe`/`jtestcli`, 4) common Windows install locations (`%ProgramFiles%\\Parasoft\\jtest\\*\\jtestcli.exe`, `%ProgramFiles(x86)%\\Parasoft\\jtest\\*\\jtestcli.exe`) choosing the newest version if multiple matches, 5) fail otherwise.
   - Validation: verify the path exists and is executable.
 
+- maven_path: REQUIRED! Full path to `mvn` executable.
+  - Sources and resolution order: 1) explicit path in the user prompt/flags, 2) MVN_EXE env var, 3) PATH lookup for `mvn`, 4) fail otherwise.
+  - Validation: verify the path exists and is executable.
+
 - settings_file: OPTIONAL; Full path to a jtest settings file to use for verification.
   - Sources and resolution order: 1) explicit path in the user prompt/flags, 2) JTEST_SETTINGS env var, 3) `validation.properties` in current directory
   - Validation: verify the file exists and is readable. Print to stdout which file was chosen.
@@ -70,7 +74,19 @@ When the user requests violation fixes, you MUST follow this exact sequence:
          - use `get_violations_from_report_file` on the generated report (`.jtest/reports/report_<violation_id>/report.xml`) to confirm whether the specific violation has been resolved; if any new violations were introduced by the fix - attempt once to fix them, and verify; in case you fail to do that: FAILURE
          - parse the generated report to identify any setup problems of type `BUE` (node: `SetupProblems/Problem` attribute: `type="BUE"`), if any are found: FAILURE. **CRUCIAL: Always ignore messages which indicate that no compiled classes were found. DO NOT ATTEMPT TO COMPILE THE PROJECT!**
          - check that at least **ONE FILE** has been analyzed, otherwise: FAILURE.
-   - Write the output of jtestcli to `.jtest/reports/report_<violation_id>/out.txt`
+   - Also verify the fix by following the steps:
+		1. Modify the file `scripts/jtestcli.properties` by setting the `scope.scontrol.files.filter.mode` property to `local`
+		2. Execute `mvn` based on `maven_path` parameter in a terminal with the mandatory switches:
+			- `test`,
+			- `surefire-report:report-only`,
+			- `-P run-tia`,
+			- `-Dmaven.test.failure.ignore=true`,
+			- `-Dtia.settings=${settings_file}`
+		3. Interpret exit codes and the surefire report at `target/reports/surefire.html` to determine SUCCESS or FAILURE according to the Verification rules:
+			- retcode 0: SUCCESS
+			- retcode non-0: FAILURE
+			- parse the surefire report to find any failed tests, if any are found: FAILURE
+		4. Revert the change to `scripts/jtestcli.properties` by setting the  `scope.scontrol.files.filter.mode` property to `branch`
    - If SUCCESS: commit with detailed message
    - If FAILURE: revert, report error, optionally retry once with a different approach. **DO NOT ATTEMPT TO COMMIT ON FAILURE, EVEN IF REASON IS UNRELATED WITH THE FIX, REPORT ISSUE TO THE USER**
 

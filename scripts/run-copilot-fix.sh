@@ -39,9 +39,9 @@ function print_usage() {
 	echo "          --maven-path <path>               Path to maven home - bin/mvn should be relative to this directory"
 	echo "          --copilot-path <path>             Path to copilot executable"
 	echo ""
-	echo "Goals:    static                            Perform Static Analysis on modified files in the current branch"
+	echo "Goals:    run-test                          Runs impacted tests on the current branch"
+	echo "          static                            Perform Static Analysis on modified files in the current branch"
 	echo "          static-fix                        Asks CoPilot to fix violations - auto-includes 'static' goal"
-	echo "          run-test                          Runs impacted tests on the current branch"
 	echo "          testgen                           Performs bulk creation for all .java files modified in the pull-request and commits them"
 }
 function missingArg () {
@@ -146,6 +146,20 @@ case "$GIT_TYPE" in
 esac
 
 start_review
+
+# Setup an error trap to ensure cancel_review is called
+error_handler() {
+	local exit_code=$?
+	local line_number=$LINENO
+	echo "Error: Command failed with exit code $exit_code on line $line_number."
+	cancel_review
+	exit 1 # Exit the script with an error status
+}
+# Set the trap to call the error_handler function on any error
+trap 'error_handler' ERR
+# Enable immediate exit on error
+set -e
+
 if [[ -d .jtest ]]; then
 	echo "Cleaning .jtest folder"
 	rm -rf .jtest
@@ -157,13 +171,46 @@ PROJECT_NAME="$GROUPID:$ARTIFACTID"
 #PROJECT_NAME=$(jq -e -r '.name' target/jtest/jtest.data.json)
 echo "Found project name $PROJECT_NAME"
 
+if [[ "$GOALS" == *"run-test"* ]]; then
+	# Run impacted tests with Jtest
+	# TODO: Make this a TIA run
+	echo "============================="
+	echo "=====[ Run Junit tests ]====="
+	echo "============================="
+	"$MVN" test surefire-report:report-only -P run-tia -Dmaven.test.failure.ignore=true -Dtia.settings="$TIA_SETTINGS"
+	SUMMARY+="## Junit test execution"$'\n'
+	if [[ -f "target/reports/surefire.html" ]]; then
+		rm -rf scripts/test_failures.md
+		rm -rf scripts/test_results.md
+		"$COPILOT" -p "Examine the Surefire report at @target/reports/surefire.html. Create a simple markdown report containing only information from the 'Summary' and 'Failure Details' sections of the report. If there were any failures, write your report to scripts/test_failures.md; otherwise, write your report to scripts/test_results.md." --model claude-sonnet-4.5 --allow-all-tools --allow-all-paths --log-dir .copilot/logs/
+		if [[ -f "scripts/test_failures.md" ]]; then
+			echo "There are test failures. The pull-request will be marked as 'Needs Work'."
+			COMMENT=$(cat scripts/test_failures.md)
+			SUMMARY+="$COMMENT"$'\n'
+			STATUS=needsWork
+		else
+			if [[ -f "scripts/test_results.md" ]]; then
+				COMMENT=$(cat scripts/test_results.md)
+				SUMMARY+="$COMMENT"$'\n'
+			else
+				echo "ERROR: No test summary found!"
+				SUMMARY+="** No summary from Copilot CLI! **"$'\n'
+			fi
+		fi
+	else
+		echo "ERROR: No single surefire report was found at target/reports/surefire.html."
+		echo "       Make sure you have maven-surefire-report-plugin added to your pom.xml"
+		SUMMARY+="** No surefire report was found for executed tests! **$'\n'"
+	fi
+fi
+
 if [[ "$GOALS" == *"static"* || "$GOALS" == *"static-fix"* ]]; then
 	# Perform SA on modified files and generate report.xml
 	echo "=========================================================="
 	echo "=====[ Performing static analysis on modified files ]====="
 	echo "=========================================================="
 	SUMMARY+="## Static Analysis"$'\n'
-	"$MVN" clean package jtest:jtest -Dmaven.test.skip=true -Djtest.config="$SA_CONFIG" -Djtest.settings="$SA_SETTINGS"
+	"$MVN" jtest:jtest -Dmaven.test.skip=true -Djtest.config="$SA_CONFIG" -Djtest.settings="$SA_SETTINGS"
 	if [[ ! -f 'target/jtest/jtest.data.json' ]]; then
 		echo "ERROR: SA failed"
 		exit 1
@@ -188,6 +235,7 @@ if [[ "$NUM_VIOLATIONS" -ne 0 && "$GOALS" == *"static-fix"* ]]; then
 	export BASELINE_REPORT=target/jtest/report.xml
 	#export JTEST_HOME="C:/Program Files/Parasoft/jtest-2025.2.0"      # Should be set by the job, or on the workstation ENV
 	export JTEST_SETTINGS="$SA_SETTINGS"
+	export MVN_EXE="$MVN"
 	
 	rm -rf scripts/copilot_summary.md
 	"$COPILOT" -p "Using @scripts/copilot-instructions.md, fix violations" --model claude-sonnet-4.5 --allow-all-tools --allow-all-paths --log-dir .copilot/logs/
@@ -204,7 +252,7 @@ if [[ "$NUM_VIOLATIONS" -ne 0 && "$GOALS" == *"static-fix"* ]]; then
 	NEEDS_PUSH=$(git status | grep -c -e 'is ahead of ')
 	if [[ -n "$NEEDS_PUSH" ]]; then
 		echo "Pushing changes to update pull-request"
-		git push
+		echo "git push"
 		SUMMARY+="4. Fixes added to pull-request"$'\n'
 		STATUS=review
 	else
@@ -216,39 +264,6 @@ else
 		echo "No violations for Copilot to fix"
 		SUMMARY+="3. No violations for Copilot to fix"$'\n'
 		SUMMARY+="4. No fixes to push"$'\n'
-	fi
-fi
-
-if [[ "$GOALS" == *"run-test"* ]]; then
-	# Run impacted tests with Jtest
-	# TODO: Make this a TIA run
-	echo "============================="
-	echo "=====[ Run Junit tests ]====="
-	echo "============================="
-	"$MVN" test surefire-report:report-only -P run-tia -Dmaven.test.failure.ignore=true -Dtia.settings="$TIA_SETTINGS"
-	SUMMARY+="## Junit test execution"$'\n'
-	if [[ -f "target/reports/surefire.html" ]]; then
-		rm -rf scripts/test_failures.md
-		rm -rf scripts/test_results.md
-		"$COPILOT" -p "Examine the Surefire report at @target/reports/surefire.html. Create a simple markdown report containing only information from the `Summary` and `Failure Details` sections of the report. If there were any failures, write your report to scripts/test_failures.md; otherwise, write your report to scripts/test_results.md." --model claude-sonnet-4.5 --allow-all-tools --allow-all-paths --log-dir .copilot/logs/
-		if [[ -f "scripts/test_failures.md" ]]; then
-			echo "There are test failures. The pull-request will be marked as 'Needs Work'."
-			COMMENT=$(cat scripts/test_failures.md)
-			SUMMARY+="$COMMENT"$'\n'
-			STATUS=needsWork
-		else
-			if [[ -f "scripts/test_results.md" ]]; then
-				COMMENT=$(cat scripts/test_results.md)
-				SUMMARY+="$COMMENT"$'\n'
-			else
-				echo "ERROR: No test summary found!"
-				SUMMARY+="** No summary from Copilot CLI! **"$'\n'
-			fi
-		fi
-	else
-		echo "ERROR: No single surefire report was found at target/reports/surefire.html."
-		echo "       Make sure you have maven-surefire-report-plugin added to your pom.xml"
-		SUMMARY+="** No surefire report was found for executed tests! **$'\n'"
 	fi
 fi
 
@@ -266,7 +281,7 @@ if [[ "$GOALS" == *"testgen"* ]]; then
 		echo "Modified java code detected - adding to pull-request"
 		git add "*.java"
 		git commit -m "Parasoft Jtest: Adding Junit tests for modified code $PULL_REQUEST_ID"
-		git push
+		echo "git push"
 		SUMMARY+="Tests were committed to this pull-request"$'\n'
 		if [[ "$STATUS" == "ok" ]]; then
 			STATUS=review

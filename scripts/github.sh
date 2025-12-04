@@ -52,6 +52,16 @@ function get_modified_resources() {
 	echo "Modified files: $RESOURCES"
 }
 
+function cancel_review() {
+	curl -X DELETE --url "$GIT_BASEURL/repos/$GIT_OWNER/$GIT_REPO/pulls/$GIT_PULL_REQUEST_ID/reviews/$REVIEW_ID" -L \
+		-H "Accept: application/vnd.github+json" \
+		-H "User-Agent: $GIT_USER" \
+		-H "Authorization: Bearer $GIT_AUTH" \
+		-H "X-GitHub-Api-Version: 2022-11-28"
+		-o scripts/cancelled.json
+	echo "Pull-request review $REVIEW_ID cancelled"
+}
+
 function finish_review() {
 	case "$2" in
 		review | ok )
