@@ -188,6 +188,8 @@ if [[ "$GOALS" == *"run-test"* ]]; then
 			COMMENT=$(cat scripts/test_failures.md)
 			SUMMARY+="$COMMENT"$'\n'
 			STATUS=needsWork
+			finish
+			exit 0
 		else
 			if [[ -f "scripts/test_results.md" ]]; then
 				COMMENT=$(cat scripts/test_results.md)
@@ -213,6 +215,7 @@ if [[ "$GOALS" == *"static"* || "$GOALS" == *"static-fix"* ]]; then
 	"$MVN" jtest:jtest -Dmaven.test.skip=true -Djtest.config="$SA_CONFIG" -Djtest.settings="$SA_SETTINGS"
 	if [[ ! -f 'target/jtest/jtest.data.json' ]]; then
 		echo "ERROR: SA failed"
+		finish
 		exit 1
 	fi
 	SUMMARY+="1. Jtest performed analysis on modified files using the \"$SA_CONFIG\" configuration"$'\n'
@@ -291,12 +294,16 @@ if [[ "$GOALS" == *"testgen"* ]]; then
 	fi
 fi
 
-echo ""
-echo "========================================================"
-echo "=====[ Adding summary comment and updating status ]====="
-echo "========================================================"
-finish_review "$SUMMARY" "$STATUS"
-echo "$SUMMARY" >> "scripts/summary.md"
+function finish () {
+	echo ""
+	echo "========================================================"
+	echo "=====[ Adding summary comment and updating status ]====="
+	echo "========================================================"
+	finish_review "$SUMMARY" "$STATUS"
+	echo "$SUMMARY" >> "scripts/summary.md"
 
-echo ""
-echo "=====[ Done ]====="
+	echo ""
+	echo "=====[ Done ]====="
+}
+
+finish
