@@ -160,10 +160,18 @@ trap 'error_handler' ERR
 # Enable immediate exit on error
 set -e
 
-if [[ -d .jtest ]]; then
-	echo "Cleaning .jtest folder"
-	rm -rf .jtest
-fi
+# So that we can finish early if needed
+function finish () {
+	echo ""
+	echo "========================================================"
+	echo "=====[ Adding summary comment and updating status ]====="
+	echo "========================================================"
+	finish_review "$SUMMARY" "$STATUS"
+	echo "$SUMMARY" >> "scripts/summary.md"
+
+	echo ""
+	echo "=====[ Done ]====="
+}
 
 GROUPID=$(xmllint --xpath "*[local-name()='project']/*[local-name()='groupId']/text()" pom.xml)
 ARTIFACTID=$(xmllint --xpath "*[local-name()='project']/*[local-name()='artifactId']/text()" pom.xml)
@@ -293,17 +301,5 @@ if [[ "$GOALS" == *"testgen"* ]]; then
 		SUMMARY+="No tests were added"$'\n'
 	fi
 fi
-
-function finish () {
-	echo ""
-	echo "========================================================"
-	echo "=====[ Adding summary comment and updating status ]====="
-	echo "========================================================"
-	finish_review "$SUMMARY" "$STATUS"
-	echo "$SUMMARY" >> "scripts/summary.md"
-
-	echo ""
-	echo "=====[ Done ]====="
-}
 
 finish
